@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>INAV Disarm Hold Firmware (unofficial)</title>
+<meta name="description" content="Unofficial INAV 9 firmware with an MSP DisplayPort disarm hold, so goggles that record only while armed also record the stats screen.">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500&display=swap">
+<style>
+:root{--bg:#f2f4f6;--panel:#fff;--ink:#18212b;--muted:#5b6876;--line:#d6dce3;--accent:#c77a12;--warn:#fff4e2;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;--f-body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;--f-mono:ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#11161c;--panel:#18202a;--ink:#e4e9ee;--muted:#93a1b0;--line:#2b3644;--accent:#e7a33e;--warn:#2c261b;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+a{color:var(--accent)}
+main{max-width:48rem;margin:0 auto;padding:28px 16px 56px;display:grid;gap:20px}
+header{display:flex;gap:16px;align-items:center}
+header img{width:72px;height:72px;flex:none}
+h1{font:700 clamp(27px,5vw,38px)/1.1 var(--f-display);margin:0}
+h2{font:600 20px var(--f-display);margin:0 0 8px}
+p{margin:0}
+p+p{margin-top:8px}
+.muted{color:var(--muted)}
+.box{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.warn{background:var(--warn);border-color:var(--accent)}
+.row{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:12px}
+label{display:block;font-size:14px;color:var(--muted)}
+select,input{width:100%;margin-top:4px;padding:8px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+#target{height:15rem;margin-top:12px;font:14px/1.5 var(--f-mono)}
+.get{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:12px}
+#download{padding:10px 24px;border-radius:7px;background:var(--accent);color:#10151b;font-weight:500;text-decoration:none}
+#download[aria-disabled=true]{opacity:.4;pointer-events:none}
+#status{flex:1;min-width:12rem;color:var(--muted);font-size:14px}
+#sum{margin-top:10px;color:var(--muted);font:12px/1.4 var(--f-mono);overflow-wrap:anywhere}
+ol,ul{margin:0;padding-left:1.3rem}
+li+li{margin-top:5px}
+code{font-family:var(--f-mono);font-size:.9em;overflow-wrap:anywhere}
+pre{margin:6px 0;padding:8px 10px;overflow-x:auto;background:var(--bg);border-radius:6px;font:14px/1.5 var(--f-mono)}
+footer{color:var(--muted);font-size:14px}
+@media (max-width:34rem){.row{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <div>
+      <h1>INAV Disarm Hold Firmware</h1>
+      <p class="muted">For goggles that stop recording at disarm, before the stats screen appears.</p>
+    </div>
+  </header>
+
+  <section class="box warn">
+    <p><b>Unofficial and experimental. Not made or supported by the INAV team.</b></p>
+    <p>These are builds of official INAV source with one added setting. The feature was tested on a few boards; <b>most of these firmware files have never been run on hardware.</b> Test with props off first. Report problems with these builds on the Discord below, not to INAV.</p>
+  </section>
+
+  <section class="box">
+    <h2>Download</h2>
+    <div class="row">
+      <label>INAV version <select id="version" disabled></select></label>
+      <label>Search target <input id="search" type="search" autocomplete="off" placeholder="e.g. speedybee f405" disabled></label>
+    </div>
+    <select id="target" size="10" aria-label="Target" disabled></select>
+    <div class="get">
+      <a id="download" aria-disabled="true">Download</a>
+      <span id="status" role="status">Reading the target list from GitHub...</span>
+    </div>
+    <p id="sum"></p>
+    <noscript>This list needs JavaScript. The files are also on <a href="https://github.com/erwinquilloy/inav/releases">GitHub</a>.</noscript>
+  </section>
+
+  <section class="box">
+    <h2>Install</h2>
+    <ol>
+      <li>In the INAV Configurator CLI run <code>version</code> to get your exact target, and save a <code>diff all</code>.</li>
+      <li>Download that target here. Nothing is downloaded until you press the button.</li>
+      <li>In Firmware Flasher choose <b>Load Firmware [Local]</b> and flash. Changing INAV version: use full chip erase and restore your diff.</li>
+      <li>Set the goggles' UART to <b>MSP DisplayPort</b>, then in the CLI:<pre>set osd_msp_disarm_hold = 5
+save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
+      <li>Props off: arm for 10 seconds or more and disarm. The motors must stop at once while the goggles keep recording.</li>
+    </ol>
+  </section>
+
+  <section class="box">
+    <h2>What it changes</h2>
+    <ul>
+      <li>For the set time after a disarm, status replies on the MSP DisplayPort port still say armed. That is what keeps the goggles recording.</li>
+      <li>The flight controller disarms immediately. Other MSP ports, MAVLink and the Configurator see the real state.</li>
+      <li>To go back, flash official INAV from the Configurator.</li>
+    </ul>
+  </section>
+
+  <section class="box">
+    <h2>Source and license</h2>
+    <p>GPL-3.0, like INAV. Each <a href="https://github.com/erwinquilloy/inav/releases">release</a> carries its patch and the license. The firmware is built on GitHub from the <a href="https://github.com/erwinquilloy/inav/tree/disarm-hold-builds">public build recipe</a>. The feature is proposed to INAV as <a href="https://github.com/iNavFlight/inav/pull/12246">pull request #12246</a>, which has not been accepted.</p>
+  </section>
+
+  <footer>
+    <p>☕ If this saved you time, a tip helps keep it going: <a href="https://paypal.me/iamwinq" target="_blank" rel="noopener">paypal.me/iamwinq</a> · <a href="https://discord.gg/w7W2T8sgqn" target="_blank" rel="noopener">💬 Questions and reports on Discord</a></p>
+    <p>Not affiliated with the INAV project.</p>
+  </footer>
+</main>
+<script>
+(function () {
+  'use strict';
+  const API = 'https://api.github.com/repos/erwinquilloy/inav/releases?per_page=30';
+  const PREFIX = 'https://github.com/erwinquilloy/inav/releases/download/dsarmhold-';
+  const $ = id => document.getElementById(id);
+  const norm = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const query = new URLSearchParams(location.search);
+  let catalog = new Map();
+
+  function parse(releases) {
+    const found = [];
+    for (const r of releases) {
+      const m = /^dsarmhold-(\d+\.\d+\.\d+)$/.exec(r.tag_name);
+      if (r.draft || !m) continue;
+      const pre = 'inav_' + m[1] + '_', list = [];
+      for (const a of r.assets) {
+        const t = /^(.+)_dsarmhold_([0-9a-f]{8})_UNOFFICIAL\.hex$/.exec(a.name.slice(pre.length));
+        if (!a.name.startsWith(pre) || !t || !a.browser_download_url.startsWith(PREFIX)) continue;
+        list.push({name: t[1], rev: t[2], url: a.browser_download_url, size: a.size, digest: a.digest || ''});
+      }
+      if (list.length) found.push([m[1], list.sort((a, b) => a.name.localeCompare(b.name))]);
+    }
+    found.sort((a, b) => b[0].localeCompare(a[0], undefined, {numeric: true}));
+    return new Map(found);
+  }
+
+  function pick() {
+    const list = catalog.get($('version').value) || [];
+    const t = list.find(x => x.name === $('target').value);
+    const link = $('download');
+    if (!t) {
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled', 'true');
+      $('status').textContent = $('target').options.length + ' of ' + list.length + ' targets. Pick the exact one for your board.';
+      $('sum').textContent = '';
+      return;
+    }
+    link.href = t.url;
+    link.setAttribute('aria-disabled', 'false');
+    $('status').textContent = t.name + ', ' + (t.size / 1e6).toFixed(2) + ' MB';
+    $('sum').textContent = 'CLI "version" will show revision ' + t.rev + (t.digest ? '. File SHA-256: ' + t.digest.replace('sha256:', '') : '');
+  }
+
+  function fill() {
+    const box = $('target'), keep = box.value, q = norm($('search').value);
+    const hits = (catalog.get($('version').value) || []).filter(t => norm(t.name).includes(q));
+    box.replaceChildren(...hits.map(t => new Option(t.name, t.name)));
+    if (hits.some(t => t.name === keep)) box.value = keep;
+    else if (hits.length === 1) box.value = hits[0].name;
+    else box.selectedIndex = -1;
+    pick();
+  }
+
+  function fail(text) {
+    const a = document.createElement('a');
+    a.href = 'https://github.com/erwinquilloy/inav/releases';
+    a.textContent = 'get the files from GitHub';
+    $('status').replaceChildren(text + ' Reload later, or ', a, '.');
+  }
+
+  fetch(API)
+    .then(r => {
+      if (r.status === 403 || r.status === 429) throw new Error('GitHub is limiting requests from this connection (60 an hour).');
+      if (!r.ok) throw new Error('GitHub answered ' + r.status + '.');
+      return r.json();
+    })
+    .then(releases => {
+      catalog = parse(releases);
+      if (!catalog.size) return fail('No firmware is listed right now.');
+      $('version').replaceChildren(...Array.from(catalog.keys(), v => new Option(v, v)));
+      if (catalog.has(query.get('v'))) $('version').value = query.get('v');
+      $('search').value = query.get('t') || '';
+      for (const id of ['version', 'search', 'target']) $(id).disabled = false;
+      fill();
+      const exact = Array.from($('target').options).find(o => o.value === query.get('t'));
+      if (exact) { $('target').value = exact.value; pick(); }
+    })
+    .catch(e => fail(e instanceof TypeError ? "Can't reach GitHub." : e.message));
+
+  $('version').addEventListener('change', fill);
+  $('search').addEventListener('input', fill);
+  $('target').addEventListener('change', pick);
+})();
+</script>
+</body>
+</html>
