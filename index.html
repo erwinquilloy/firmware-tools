@@ -38,6 +38,10 @@ li+li{margin-top:5px}
 code{font-family:var(--f-mono);font-size:.9em;overflow-wrap:anywhere}
 pre{margin:6px 0;padding:8px 10px;overflow-x:auto;background:var(--bg);border-radius:6px;font:14px/1.5 var(--f-mono)}
 footer{color:var(--muted);font-size:14px}
+#stats table{width:100%;border-collapse:collapse;font:14px/1.5 var(--f-mono)}
+#stats th,#stats td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left}
+#stats td.n,#stats th.n{text-align:right;font-variant-numeric:tabular-nums}
+#stats h3{font:600 16px var(--f-display);margin:14px 0 4px}
 @media (max-width:34rem){.row{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
@@ -69,6 +73,12 @@ footer{color:var(--muted);font-size:14px}
     </div>
     <p id="sum"></p>
     <noscript>This list needs JavaScript. The files are also on <a href="https://github.com/erwinquilloy/inav/releases">GitHub</a>.</noscript>
+  </section>
+
+  <section class="box" id="stats" hidden>
+    <h2>Download stats</h2>
+    <p class="muted">GitHub's own counters for each hex file. They count every download (this page, the Windows app, direct links) and do not say who downloaded. Each file was fetched once in bulk when it was published, so "Real" is the count minus that first download.</p>
+    <div id="statsbody"></div>
   </section>
 
   <section class="box">
@@ -121,7 +131,7 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
       for (const a of r.assets) {
         const t = /^(.+)_dsarmhold_([0-9a-f]{8})_UNOFFICIAL\.hex$/.exec(a.name.slice(pre.length));
         if (!a.name.startsWith(pre) || !t || !a.browser_download_url.startsWith(PREFIX)) continue;
-        list.push({name: t[1], rev: t[2], url: a.browser_download_url, size: a.size, digest: a.digest || ''});
+        list.push({name: t[1], rev: t[2], url: a.browser_download_url, size: a.size, digest: a.digest || '', dl: a.download_count || 0});
       }
       if (list.length) found.push([m[1], list.sort((a, b) => a.name.localeCompare(b.name))]);
     }
@@ -156,6 +166,41 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
     pick();
   }
 
+  function cell(tag, text, cls) {
+    const c = document.createElement(tag);
+    c.textContent = text;
+    if (cls) c.className = cls;
+    return c;
+  }
+
+  function table(head, rows) {
+    const t = document.createElement('table'), tr = document.createElement('tr');
+    head.forEach((h, i) => tr.append(cell('th', h, i ? 'n' : '')));
+    t.append(tr);
+    for (const r of rows) {
+      const row = document.createElement('tr');
+      r.forEach((v, i) => row.append(cell('td', String(v), i ? 'n' : '')));
+      t.append(row);
+    }
+    return t;
+  }
+
+  function stats() {
+    const real = t => Math.max(0, t.dl - 1), out = [], all = [];
+    const sum = (l, f) => l.reduce((n, t) => n + f(t), 0);
+    const rows = Array.from(catalog, ([v, l]) => {
+      l.forEach(t => all.push([v, t]));
+      return [v, l.length, sum(l, t => t.dl), sum(l, real)];
+    });
+    out.push(table(['Version', 'Targets', 'Count', 'Real'], rows));
+    const top = all.filter(([, t]) => real(t) > 0).sort((a, b) => real(b[1]) - real(a[1]) || a[1].name.localeCompare(b[1].name));
+    out.push(cell('h3', top.length ? 'Downloaded targets' : 'No real downloads yet'));
+    if (top.length) out.push(table(['Target', 'Version', 'Real'], top.map(([v, t]) => [t.name, v, real(t)])));
+    out.push(cell('p', 'Read ' + new Date().toLocaleString() + '. Reload for fresh numbers.', 'muted'));
+    $('statsbody').replaceChildren(...out);
+    $('stats').hidden = false;
+  }
+
   function fail(text) {
     const a = document.createElement('a');
     a.href = 'https://github.com/erwinquilloy/inav/releases';
@@ -179,6 +224,7 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
       fill();
       const exact = Array.from($('target').options).find(o => o.value === query.get('t'));
       if (exact) { $('target').value = exact.value; pick(); }
+      if (query.has('stats')) stats();
     })
     .catch(e => fail(e instanceof TypeError ? "Can't reach GitHub." : e.message));
 
