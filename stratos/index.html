@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArduPlane Stratos Firmware Download</title>
+<meta name="description" content="Pick your flight controller and download ArduPlane Stratos firmware straight from the GitHub releases.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500&display=swap">
+<style>
+:root{--bg:#f2f4f6;--panel:#fff;--ink:#18212b;--muted:#5b6876;--line:#d6dce3;--accent:#1f6fb8;--warn:#e8f1fa;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;--f-body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;--f-mono:ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#11161c;--panel:#18202a;--ink:#e4e9ee;--muted:#93a1b0;--line:#2b3644;--accent:#5ba8ec;--warn:#1a2633;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+a{color:var(--accent)}
+main{max-width:48rem;margin:0 auto;padding:28px 16px 56px;display:grid;gap:20px}
+header{display:grid;gap:10px}
+header img{width:min(100%,420px);height:auto}
+h1{font:700 clamp(27px,5vw,38px)/1.1 var(--f-display);margin:0}
+h2{font:600 20px var(--f-display);margin:0 0 8px}
+h3{font:600 16px var(--f-display);margin:14px 0 4px}
+p{margin:0}
+p+p{margin-top:8px}
+.muted{color:var(--muted)}
+.box{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.note{background:var(--warn);border-color:var(--accent)}
+.row{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:12px}
+label{display:block;font-size:14px;color:var(--muted)}
+select,input{width:100%;margin-top:4px;padding:8px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+#board{height:15rem;margin-top:12px;font:14px/1.5 var(--f-mono)}
+.get{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:12px}
+#download{padding:10px 24px;border-radius:7px;background:var(--accent);color:#fff;font-weight:500;text-decoration:none}
+#download[aria-disabled=true]{opacity:.4;pointer-events:none}
+#status{flex:1;min-width:12rem;color:var(--muted);font-size:14px}
+#more{margin-top:10px;font-size:14px;color:var(--muted)}
+#more a+a::before{content:" · ";color:var(--muted)}
+ol,ul{margin:0;padding-left:1.3rem}
+li+li{margin-top:5px}
+code{font-family:var(--f-mono);font-size:.9em;overflow-wrap:anywhere}
+footer{color:var(--muted);font-size:14px}
+#stats table{width:100%;border-collapse:collapse;font:14px/1.5 var(--f-mono)}
+#stats th,#stats td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left}
+#stats .n{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:34rem){.row{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/erwinquilloy/ardupilot/master_custom_4.7.3/docs/images/stratos-logo-wide.png">
+      <img src="https://raw.githubusercontent.com/erwinquilloy/ardupilot/master_custom_4.7.3/docs/images/stratos-logo-wide-light.png" alt="ArduPlane Stratos, powered by ArduPilot">
+    </picture>
+    <h1>Stratos firmware download</h1>
+    <p class="muted">Pick your flight controller and get the firmware zip straight from the <a href="https://github.com/erwinquilloy/ardupilot/releases">GitHub releases</a>. Full is the F7/H7 build, Light the 1 MB F4 build: the list already shows the right one for each board.</p>
+  </header>
+
+  <section class="box">
+    <h2>Download</h2>
+    <div class="row">
+      <label>Stratos version <select id="version" disabled></select></label>
+      <label>Search board <input id="search" type="search" autocomplete="off" placeholder="e.g. speedybee wing" disabled></label>
+    </div>
+    <select id="board" size="10" aria-label="Board" disabled></select>
+    <div class="get">
+      <a id="download" aria-disabled="true">Download</a>
+      <span id="status" role="status">Reading the releases from GitHub...</span>
+    </div>
+    <p id="more"></p>
+    <noscript>This list needs JavaScript. The files are also on <a href="https://github.com/erwinquilloy/ardupilot/releases">GitHub</a>.</noscript>
+  </section>
+
+  <section class="box" id="stats" hidden>
+    <h2>Download stats</h2>
+    <p class="muted">GitHub's own download counters for each zip, the same numbers the release pages count. Downloads from this page and from GitHub count alike. GitHub updates them with a delay, so a new download can take a while to show.</p>
+    <div id="statsbody"></div>
+  </section>
+
+  <section class="box note">
+    <h2>Before you flash</h2>
+    <p>Save a full parameter backup first. Read the <b>release notes</b> link under the button: they say whether your parameters carry over from what you run now.</p>
+  </section>
+
+  <section class="box">
+    <h2>Install</h2>
+    <ol>
+      <li>Unzip. Inside are <code>arduplane.apj</code>, <code>arduplane_with_bl.hex</code>, <code>arduplane.bin</code> and <code>arduplane</code>.</li>
+      <li><b>Already on ArduPilot:</b> in Mission Planner open Install Firmware, choose <b>Load custom firmware</b> and pick <code>arduplane.apj</code> (QGroundControl: Firmware, Advanced settings, Custom firmware file).</li>
+      <li><b>Coming from INAV or Betaflight:</b> put the board in DFU mode and flash <code>arduplane_with_bl.hex</code> with STM32CubeProgrammer or the INAV/Betaflight Configurator flasher. After that, use the <code>.apj</code> for updates.</li>
+      <li>Connect and check the boot messages show <code>Stratos</code> and the version you picked.</li>
+    </ol>
+  </section>
+
+  <section class="box">
+    <h2>More</h2>
+    <p>Features and parameters: <a href="https://github.com/erwinquilloy/ardupilot/blob/master_custom_4.7.3/README_CUSTOM.md">README_CUSTOM.md</a>. Tools for tuning and planning: <a href="https://erwinquilloy.github.io/ardupilot-tools/">ArduPilot Tools</a>. Stratos is built on ArduPilot and is GPL-3.0; the source is in the <a href="https://github.com/erwinquilloy/ardupilot">fork</a>.</p>
+  </section>
+
+  <footer>
+    <p>☕ If this saved you time, a tip helps keep it going: <a href="https://paypal.me/iamwinq" target="_blank" rel="noopener">paypal.me/iamwinq</a> · <a href="https://discord.gg/w7W2T8sgqn" target="_blank" rel="noopener">💬 Questions and reports on Discord</a></p>
+    <p>Not an official ArduPilot release.</p>
+  </footer>
+</main>
+<script>
+(function () {
+  'use strict';
+  const API = 'https://api.github.com/repos/erwinquilloy/ardupilot/releases?per_page=100';
+  const PREFIX = 'https://github.com/erwinquilloy/ardupilot/releases/download/';
+  const $ = id => document.getElementById(id);
+  const norm = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const query = new URLSearchParams(location.search);
+  let catalog = new Map();   // version -> {pre, date, boards: [], extras: [], notes: {full, light}}
+
+  function parse(releases) {
+    const map = new Map();
+    for (const r of releases) {
+      const m = /^(full|light)-v(.+)$/.exec(r.tag_name);
+      if (r.draft || !m) continue;
+      const variant = m[1], ver = m[2];
+      const v = map.get(ver) || {pre: false, date: '', boards: [], extras: new Map(), notes: {}};
+      v.pre = v.pre || r.prerelease;
+      if (r.published_at > v.date) v.date = r.published_at;
+      v.notes[variant] = r.html_url;
+      for (const a of r.assets) {
+        if (!a.browser_download_url.startsWith(PREFIX)) continue;
+        const b = /^(.+)_plane_bin_(full|light)-v.+_\.zip$/.exec(a.name);
+        if (b) v.boards.push({name: b[1], variant, url: a.browser_download_url, size: a.size, dl: a.download_count || 0, notes: r.html_url});
+        else if (!v.extras.has(a.name)) v.extras.set(a.name, a.browser_download_url);
+      }
+      map.set(ver, v);
+    }
+    const out = Array.from(map).filter(([, v]) => v.boards.length);
+    out.sort((a, b) => b[1].date.localeCompare(a[1].date));
+    for (const [, v] of out) {
+      v.boards.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}) || a.variant.localeCompare(b.variant));
+      const names = v.boards.map(b => b.name);
+      v.boards.forEach(b => b.key = names.filter(n => n === b.name).length > 1 ? b.name + ' (' + b.variant + ')' : b.name);
+    }
+    return new Map(out);
+  }
+
+  function current() { return catalog.get($('version').value); }
+
+  function link(text, href) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = text;
+    return a;
+  }
+
+  function pick() {
+    const v = current(), list = v ? v.boards : [];
+    const b = list.find(x => x.key === $('board').value);
+    const dl = $('download');
+    if (!b) {
+      dl.removeAttribute('href');
+      dl.setAttribute('aria-disabled', 'true');
+      $('status').textContent = $('board').options.length + ' of ' + list.length + ' boards. Pick the exact one for your flight controller.';
+      $('more').replaceChildren();
+      return;
+    }
+    dl.href = b.url;
+    dl.setAttribute('aria-disabled', 'false');
+    $('status').textContent = b.name + ', ' + b.variant + ' build, ' + (b.size / 1e6).toFixed(1) + ' MB zip';
+    const more = [link('Release notes (' + b.variant + ')', b.notes)];
+    for (const [name, url] of v.extras) more.push(link(name, url));
+    $('more').replaceChildren(...more);
+  }
+
+  function fill() {
+    const box = $('board'), keep = box.value, q = norm($('search').value);
+    const hits = (current() ? current().boards : []).filter(b => norm(b.name).includes(q));
+    box.replaceChildren(...hits.map(b => new Option(b.key.padEnd(30, ' ') + b.variant, b.key)));
+    if (hits.some(b => b.key === keep)) box.value = keep;
+    else if (hits.length === 1) box.value = hits[0].key;
+    else box.selectedIndex = -1;
+    pick();
+    if (!$('stats').hidden) stats();
+  }
+
+  function cell(tag, text, cls) {
+    const c = document.createElement(tag);
+    c.textContent = text;
+    if (cls) c.className = cls;
+    return c;
+  }
+
+  function table(head, rows) {
+    const t = document.createElement('table'), tr = document.createElement('tr');
+    head.forEach((h, i) => tr.append(cell('th', h, i ? 'n' : '')));
+    t.append(tr);
+    for (const r of rows) {
+      const row = document.createElement('tr');
+      r.forEach((x, i) => row.append(cell('td', String(x), i ? 'n' : '')));
+      t.append(row);
+    }
+    return t;
+  }
+
+  function stats() {
+    const sum = (l, f) => l.reduce((n, x) => n + f(x), 0);
+    const rows = Array.from(catalog, ([ver, v]) => [
+      'v' + ver,
+      sum(v.boards.filter(b => b.variant === 'full'), b => b.dl),
+      sum(v.boards.filter(b => b.variant === 'light'), b => b.dl),
+      sum(v.boards, b => b.dl)]);
+    const v = current(), ver = $('version').value;
+    const per = v.boards.slice().sort((a, b) => b.dl - a.dl || a.name.localeCompare(b.name));
+    $('statsbody').replaceChildren(
+      table(['Version', 'Full', 'Light', 'Total'], rows),
+      cell('h3', 'v' + ver + ' by board'),
+      table(['Board', 'Variant', 'Downloads'], per.map(b => [b.name, b.variant, b.dl])),
+      cell('p', 'Read ' + new Date().toLocaleString() + '. Reload for the latest numbers.', 'muted'));
+    $('stats').hidden = false;
+  }
+
+  function fail(text) {
+    $('status').replaceChildren(text + ' Reload later, or ', link('get the files from GitHub', 'https://github.com/erwinquilloy/ardupilot/releases'), '.');
+  }
+
+  fetch(API)
+    .then(r => {
+      if (r.status === 403 || r.status === 429) throw new Error('GitHub is limiting requests from this connection (60 an hour).');
+      if (!r.ok) throw new Error('GitHub answered ' + r.status + '.');
+      return r.json();
+    })
+    .then(releases => {
+      catalog = parse(releases);
+      if (!catalog.size) return fail('No firmware is listed right now.');
+      $('version').replaceChildren(...Array.from(catalog, ([ver, v]) => new Option('v' + ver + (v.pre ? ' (beta)' : ''), ver)));
+      const firstStable = Array.from(catalog).find(([, v]) => !v.pre);
+      if (firstStable) $('version').value = firstStable[0];
+      const want = (query.get('v') || '').replace(/^v/, '');
+      if (catalog.has(want)) $('version').value = want;
+      $('search').value = query.get('b') || '';
+      for (const id of ['version', 'search', 'board']) $(id).disabled = false;
+      if (query.has('stats')) $('stats').hidden = false;
+      fill();
+      const exact = Array.from($('board').options).find(o => o.value === query.get('b'));
+      if (exact) { $('board').value = exact.value; pick(); }
+    })
+    .catch(e => fail(e instanceof TypeError ? "Can't reach GitHub." : e.message));
+
+  $('version').addEventListener('change', fill);
+  $('search').addEventListener('input', fill);
+  $('board').addEventListener('change', pick);
+})();
+</script>
+</body>
+</html>
