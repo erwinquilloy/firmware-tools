@@ -128,7 +128,7 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
   function parse(releases) {
     const found = [];
     for (const r of releases) {
-      const m = /^dsarmhold-(\d+\.\d+\.\d+)$/.exec(r.tag_name);
+      const m = /^dsarmhold-(\d+\.\d+\.\d+(?:-rc\d+)?)$/.exec(r.tag_name);
       if (r.draft || !m) continue;
       const pre = 'inav_' + m[1] + '_', list = [];
       for (const a of r.assets) {
@@ -220,8 +220,11 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
     .then(releases => {
       catalog = parse(releases);
       if (!catalog.size) return fail('No firmware is listed right now.');
-      $('version').replaceChildren(...Array.from(catalog.keys(), v => new Option(v, v)));
+      // release candidates are listed, but a final release stays the default
+      $('version').replaceChildren(...Array.from(catalog.keys(), v => new Option(v.includes('-rc') ? v + ' (release candidate)' : v, v)));
+      const final = Array.from(catalog.keys()).find(v => !v.includes('-rc'));
       if (catalog.has(query.get('v'))) $('version').value = query.get('v');
+      else if (final) $('version').value = final;
       $('search').value = query.get('t') || '';
       for (const id of ['version', 'search', 'target']) $(id).disabled = false;
       fill();
