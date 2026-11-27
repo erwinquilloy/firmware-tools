@@ -72,7 +72,7 @@ footer{color:var(--muted);font-size:14px}
       <span id="status" role="status">Reading the target list from GitHub...</span>
     </div>
     <p id="sum"></p>
-    <noscript>This list needs JavaScript. The files are also on <a href="https://github.com/erwinquilloy/inav/releases">GitHub</a>.</noscript>
+    <noscript>This list needs JavaScript. The files are also on GitHub: <a href="https://github.com/erwinquilloy/inav/releases">9.x</a>, <a href="https://github.com/erwinquilloy/inav-disarm-hold-builds/releases">10.0 and later</a>.</noscript>
   </section>
 
   <section class="box" id="stats" hidden>
@@ -107,7 +107,7 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
 
   <section class="box">
     <h2>Source and license</h2>
-    <p>GPL-3.0, like INAV. Each <a href="https://github.com/erwinquilloy/inav/releases">release</a> carries its patch and the license. The firmware is built on GitHub from the <a href="https://github.com/erwinquilloy/inav/tree/disarm-hold-builds">public build recipe</a>. The feature is proposed to INAV as <a href="https://github.com/iNavFlight/inav/pull/12246">pull request #12246</a>, which has not been accepted.</p>
+    <p>GPL-3.0, like INAV. Each <a href="https://github.com/erwinquilloy/inav/releases">release</a> carries its patch and the license. The firmware is built on GitHub from the public build recipe (<a href="https://github.com/erwinquilloy/inav/tree/disarm-hold-builds">9.x</a>, <a href="https://github.com/erwinquilloy/inav-disarm-hold-builds">10.0 and later</a>). The feature is proposed to INAV as <a href="https://github.com/iNavFlight/inav/pull/12246">pull request #12246</a>, which has not been accepted.</p>
   </section>
 
   <footer>
@@ -118,8 +118,10 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
 <script>
 (function () {
   'use strict';
-  const API = 'https://api.github.com/repos/erwinquilloy/inav/releases?per_page=30';
-  const PREFIX = 'https://github.com/erwinquilloy/inav/releases/download/dsarmhold-';
+  // 9.x is released on the INAV fork, 10.0 and later on the separate build repo
+  const REPOS = ['erwinquilloy/inav', 'erwinquilloy/inav-disarm-hold-builds'];
+  const API = REPOS.map(r => 'https://api.github.com/repos/' + r + '/releases?per_page=30');
+  const PREFIX = REPOS.map(r => 'https://github.com/' + r + '/releases/download/dsarmhold-');
   const $ = id => document.getElementById(id);
   const norm = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
   const query = new URLSearchParams(location.search);
@@ -133,7 +135,7 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
       const pre = 'inav_' + m[1] + '_', list = [];
       for (const a of r.assets) {
         const t = /^(.+)_dsarmhold_([0-9a-f]{8})_UNOFFICIAL\.hex$/.exec(a.name.slice(pre.length));
-        if (!a.name.startsWith(pre) || !t || !a.browser_download_url.startsWith(PREFIX)) continue;
+        if (!a.name.startsWith(pre) || !t || !PREFIX.some(p => a.browser_download_url.startsWith(p))) continue;
         list.push({name: t[1], rev: t[2], url: a.browser_download_url, size: a.size, digest: a.digest || '', dl: a.download_count || 0});
       }
       if (list.length) found.push([m[1], list.sort((a, b) => a.name.localeCompare(b.name))]);
@@ -211,11 +213,17 @@ save</pre>0 to 7 seconds. 0 is off, and is the default.</li>
     $('status').replaceChildren(text + ' Reload later, or ', a, '.');
   }
 
-  fetch(API)
-    .then(r => {
-      if (r.status === 403 || r.status === 429) throw new Error('GitHub is limiting requests from this connection (60 an hour).');
-      if (!r.ok) throw new Error('GitHub answered ' + r.status + '.');
-      return r.json();
+  const load = url => fetch(url).then(r => {
+    if (r.status === 403 || r.status === 429) throw new Error('GitHub is limiting requests from this connection (60 an hour).');
+    if (!r.ok) throw new Error('GitHub answered ' + r.status + '.');
+    return r.json();
+  });
+  // one repo failing still lists the other
+  Promise.allSettled(API.map(load))
+    .then(res => {
+      const ok = res.filter(x => x.status === 'fulfilled');
+      if (!ok.length) throw res[0].reason;
+      return ok.flatMap(x => x.value);
     })
     .then(releases => {
       catalog = parse(releases);
